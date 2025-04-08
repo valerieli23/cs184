@@ -1,382 +1,443 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
-  <head>
-    <style>
-      div.padded {
-        padding-top: 0px;
-        padding-right: 100px;
-        padding-bottom: 0.25in;
-        padding-left: 100px;
-      }
-    </style>
-    <title>Valerie Li | CS 184</title>
-    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
-    <link rel="stylesheet" type="text/css" href="style.css" media="screen" />
-  </head>
-  <body>
+
+<head>
+  <style>
+    div.padded {
+      padding-top: 0px;
+      padding-right: 100px;
+      padding-bottom: 0.25in;
+      padding-left: 100px;
+    }
+  </style>
+  <title>Valerie Li | CS 184</title>
+  <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+  <link rel="stylesheet" type="text/css" href="style.css" media="screen" />
+</head>
+
+<body>
+  <br />
+  <h1 align="middle">Assignment 3-2: Additional Features to PathTracer</h1>
+  <h2 align="middle">Valerie Li</h2>
+  <h2 align="middle">https://valerieli23.github.io/cs184/</h2>
+  <p align="middle">
+    In this assignment, I explored how ray depth, material properties, and light sampling techniques
+    affect rendering realism, particularly with mirror, glass, and microfacet materials.
+    I implemented importance sampling, environment lighting, and depth of field techniques
+    to reduce noise and simulate real-world lighting and focus effects.
+
+    I had some challenges figuring out how to render the environment light correctly, the math was
+    quite complex!
+  </p>
+
+  <div class="padded">
+    <h3 align="middle">Part 1. Mirror and Glass Materials</h3>
+
+    <p>
+      I implemented reflection and refraction models for different BSDFs.
+      The MirrorBSDF perfectly reflects rays, while the RefractionBSDF uses Snell's Law to refract
+      them and detects when total internal reflection occurs, and reflects that ray instead. The GlassBSDF combines
+      both, using Fresnel equations
+      to probabilistically choose between reflection and refraction.
+    </p>
+
+    <table>
+      <caption>
+        All pictures have 64 samples per pixel, 4 samples per light
+      </caption>
+      <tr>
+        <td>
+          <img src="images/ray0.png" alt="Image 1" />
+          <figcaption>Max ray depth of 0.</figcaption>
+        </td>
+        <td>
+          <img src="images/ray1.png" alt="Image 2" />
+          <figcaption>Max ray depth of 1.</figcaption>
+        </td>
+      </tr>
+    </table>
+    <p>
+      Beginning with <code
+        style="font-family: monospace; background: #f0f0f0; padding: 2px 4px; border-radius: 3px;">max_ray_depth = 0</code>,
+      only the light source is
+      visible since all surfaces need at least one bounce.
+    </p>
+    <p>
+      With <code
+        style="font-family: monospace; background: #f0f0f0; padding: 2px 4px; border-radius: 3px;">max_ray_depth = 1</code>,
+      the balls are dark. This is the
+      effect of direct lighting. The spheres do reflect and refract the light
+      source however.
+    </p>
+    <table>
+      <tr>
+        <td>
+          <img src="images/ray2.png" alt="Image 3" />
+          <figcaption>Max ray depth of 2.</figcaption>
+        </td>
+        <td>
+          <img src="images/ray3.png" alt="Image 4" />
+          <figcaption>Max ray depth of 3.</figcaption>
+        </td>
+      </tr>
+    </table>
+    <p>
+      With <code
+        style="font-family: monospace; background: #f0f0f0; padding: 2px 4px; border-radius: 3px;">max_ray_depth = 2</code>,
+      the ball on the left, the ball with
+      a mirror surface, is apparent. The ball on the right, the glass surface
+      one, is still mainly dark. This is due to the fact that for a mirror,
+      two bounces are used, one for the light to hit the ball and another to
+      hit the box.
+    </p>
+    <p>
+      With <code
+        style="font-family: monospace; background: #f0f0f0; padding: 2px 4px; border-radius: 3px;">max_ray_depth = 3</code>,
+      the glass ball starts to show its
+      properties. This is due to the fact that rays can now travel into the
+      sphere, exit it, and hit the box. This is the effect of the refraction
+      code I implemented. I also noticed how the glass ball has an extremely
+      bright shadow. I noticed that the ball in the mirror reflection is
+      black, since mirror-like reflection requires an extra bounce.
+    </p>
+    <table>
+      <tr>
+        <td>
+          <img src="images/ray4.png" alt="Image 3" />
+          <figcaption>Max ray depth of 4.</figcaption>
+        </td>
+      </tr>
+    </table>
+    <p>
+      With <code
+        style="font-family: monospace; background: #f0f0f0; padding: 2px 4px; border-radius: 3px;">max_ray_depth = 4</code>,
+      the reflection of the glass
+      surfaced ball is now in the mirror ball.
+    </p>
+    <table>
+      <tr>
+        <td>
+          <img src="images/ray5.png" alt="Image 4" />
+          <figcaption>Max ray depth of 5.</figcaption>
+        </td>
+        <td>
+          <img src="images/ray100.png" alt="Image 3" />
+          <figcaption>Max ray depth of 100.</figcaption>
+        </td>
+      </tr>
+    </table>
+    <p>
+      With <code
+        style="font-family: monospace; background: #f0f0f0; padding: 2px 4px; border-radius: 3px;">max_ray_depth = 5</code>
+      and
+      <code
+        style="font-family: monospace; background: #f0f0f0; padding: 2px 4px; border-radius: 3px;">max_ray_depth = 100</code>,
+      the two balls have started to
+      converge. There is not too much noticeable difference, just perhaps that
+      the glass ball is a little bit brighter.
+    </p>
     <br />
-    <h1 align="middle">Assignment 3-2: Additional Features to PathTracer</h1>
-    <h2 align="middle">Valerie Li</h2>
-    <h2 align="middle">https://valerieli23.github.io/cs184/</h2>
+    <br />
 
-    <div class="padded">
-      <h3 align="middle">Part 1. Mirror and Glass Materials</h3>
+    <h3 align="middle">Part 2. Microfacet Material</h3>
+    <p>
+      I implemented the MicrofacetBSDF using the Beckmann distribution to model surface roughness, a shadow
+      masking term <b>G</b> and the Fresnel term <b>F</b> for
+      isotropic rough conductors. Importance sampling was used to generate directions based
+      on the microfacet normal distribution, improving rendering quality by reducing noise and bias.
+    </p>
+    <table>
+      <caption>
+        All pictures have 128 samples per pixel, 1 sample per light, and 5
+        bounces
+      </caption>
+      <tr>
+        <td>
+          <img src="images/alpha005.png" alt="Image 1" />
+          <figcaption>Alpha of 0.005.</figcaption>
+        </td>
+        <td>
+          <img src="images/alpha05.png" alt="Image 2" />
+          <figcaption>Alpha of 0.05.</figcaption>
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <img src="images/alpha25.png" alt="Image 1" />
+          <figcaption>Alpha of 0.25.</figcaption>
+        </td>
+        <td>
+          <img src="images/alpha5.png" alt="Image 2" />
+          <figcaption>Alpha of 0.5.</figcaption>
+        </td>
+      </tr>
+    </table>
+    <p>
+      Alpha is the roughness parameter that controls how "bumpy" the
+      microscopic surface is, and that affects how light is reflected. An
+      &alpha; that is smaller appers more glossy and an &alpha; that is larger
+      leads to less reflective and more matte. Lower &alpha; results in
+      microfacets that are aligned with the surface normal. This leads to a
+      strong reflection. As seen in the &alpha; = 0.005 rendered image, the
+      dragon is more reflective than the other &alpha; values. At larger
+      &alpha;, the angles of the microfacets are less aligned with the surface
+      normal, and this leads to incoming rays to have a higher variance of
+      outgoing angles. Thus, the surface looks more diffused and less glossy.
+      As seen in the &alpha; = 0.5 dragon, which is quite matte and not
+      reflective.
+    </p>
+    <br />
+    <p>
+      <b> </b>
+    </p>
+    <table>
+      <tr>
+        <td>
+          <img src="images/hemisphere.png" alt="Image 3" />
+          <figcaption>
+            Bunny rendered with cosine hemisphere sampling.
+          </figcaption>
+        </td>
+        <td>
+          <img src="images/importance.png" alt="Image 4" />
+          <figcaption>Bunny rendered with importance sampling.</figcaption>
+        </td>
+      </tr>
+    </table>
+    <p>
+      Cosine hemisphere sampling gives a noiser rendered image of the surface
+      of the material. This is due to the fact that it samples uniformly,
+      which may be in directions that do not form the correct mirrored angle.
+      Importance sampling leads to a less noisy image of the surface of the
+      material, with less dark spots, because it importance sampling biases
+      samples towards ones with half vectors that align close with the surface
+      normal.
+    </p>
+    <br />
+    <p>
+      <b>
+        <td>
+          <img src="images/indium.png" alt="Image 1" />
+          <figcaption>Bunny rendered with Indium as its material!</figcaption>
+        </td>
+      </b>
+    </p>
+    <p>
+      I used <b>&eta;</b> values of <code
+        style="font-family: monospace; background: #f0f0f0; padding: 2px 4px; border-radius: 3px;">0.33228, 1.0162, 1.2474</code>,
+      with corresponding <b>k</b>
+      values of <code
+        style="font-family: monospace; background: #f0f0f0; padding: 2px 4px; border-radius: 3px;">3.1646, 2.5785, 2.4603</code>
+      to get the material <b>Indium</b>.
+    </p>
+    <br />
 
-      <table>
+    <h3 align="middle">Part 3. Environment Light</h3>
+    <p>
+      I implemented environment light first by using uniform cosine sampling. Then, I implemented environment light
+      importance sampling by calculating the PDF over the map (<code
+        style="font-family: monospace; background: #f0f0f0; padding: 2px 4px; border-radius: 3px;">pdf_envmap</code>),
+      the marginal distribution for
+      vertical coordinates (<code
+        style="font-family: monospace; background: #f0f0f0; padding: 2px 4px; border-radius: 3px;">marginal_y</code>),
+      and the conditional distribution for horizontal coordinates (<code
+        style="font-family: monospace; background: #f0f0f0; padding: 2px 4px; border-radius: 3px;">conds_y</code>).
+      During sampling, I generated directions biased toward brighter regions in the map,
+      improving rendering quality by reducing noise compared to uniform sampling.
+    </p>
+
+    <table>
+      <tr>
+        <td>
+          <img src="images/the_sky_is_on_fire_4k.jpg" alt="Image 1" width="800px" />
+          <figcaption>This was the .exr file I chose converted to .jpg. Unfortunately, its brilliance was
+            sort of lost when only rendering such a small portion of it. I am wondering about why my
+            rendered background is more muted and brighter than what appears here.
+          </figcaption>
+        </td>
+      </tr>
+    </table>
+
+    <p>
+    </p>
+    <p>Environment lighting uses an environment map to simulate light arriving from all directions, like
+      it is from a source that is infinitely far away. The light rays are essentially parallel, which is a
+      good approximation for natural light from the sky, since the sun is a light source that is
+      far away! By sampling this environment map, I am able to capture overall lighting, reflections, and
+      shadows in a scene, to create more realistic renderings!
+    </p>
+    <br />
+    <p>
+    <table>
+      <tr>
+        <td>
+          <img src="images/probability_debug.png" alt="Image 1" width="800px" />
+          <figcaption>Probability debug image generated!</figcaption>
+        </td>
+      </tr>
+    </table>
+    </p>
+    <p>Because I was not able to access the original .exr file, it was harder to verify if
+      my probability calculations were correct. At first I was worried, because this image generated
+      was a lot smoother than the example image. But, after playing around with several of the files, I saw
+      that some of the other ones generated probability images that were more "jagged", which reassured me. </p>
+    <br />
+    <p>
+    <table style="margin: 0 auto; width: auto; text-align: center">
+      <tr>
+        <td style="text-align: center">
+          <img src="images/uniform_sampling_flipped.png" width="400px" />
+          <figcaption>
+            Uniform sampling, 4 samples per pixel, 64 samples per light.
+          </figcaption>
+        </td>
+        <td style="text-align: center">
+          <img src="images/importance_sampling.png" width="400px" />
+          <figcaption>
+            Importance sampling, 4 samples per pixel, 64 samples per light.
+          </figcaption>
+        </td>
+      </tr>
+    </table>
+    </p>
+    <p>The noise level of the picture rendered with importance sampling is lower than the picture
+      that used uniform sampling. This is especially present in the pedestal that the bunny is perched on.
+    </p>
+    <br />
+    <p>
+    <table style="margin: 0 auto; width: auto; text-align: center">
+      <tr>
+        <td style="text-align: center">
+          <img src="images/uniform_cu.png" width="400px" />
+          <figcaption>
+            Uniform sampling, 4 samples per pixel, 64 samples per light.
+          </figcaption>
+        </td>
+        <td style="text-align: center">
+          <img src="images/importance_cu.png" width="400px" />
+          <figcaption>
+            Importance sampling, 4 samples per pixel, 64 samples per light.
+          </figcaption>
+        </td>
+      </tr>
+    </table>
+    </p>
+    <p>Again, the image rendered with importance sampling appears noticeably smoother.
+      There are fewer speckles, indicating reduced noise.
+      This can be seen in the pedestal, especially at the rounded corners,
+      as well as on the edges of the bunny.
+    </p>
+    <br />
+
+    <h3 align="middle">Part 4. Depth of Field</h3>
+    <p>
+      I implemented depth of field by modifying rays to originate from a
+      sampled point on the lens and pass through a point on the focal plane.
+      The sampled lens position is computed using
+      <code style="font-family: monospace; background: #f0f0f0; padding: 2px 4px; border-radius: 3px;">rndR</code>
+      and <code
+        style="font-family: monospace; background: #f0f0f0; padding: 2px 4px; border-radius: 3px;">rndTheta</code> for
+      uniform disk sampling,
+      and the direction is adjusted to focus on the point where the original sensor ray would
+      intersect the focal plane. The resulting ray is transformed into world space using the
+      camera-to-world matrix and returned with appropriate near and far clip values.
+    </p>
+
+    <p>
+      A pinhole camera has an infinitely small aperture, which means each light ray passes through a single point. This
+      results
+      in a rendered scene where all parts are in focus. On the other hand, a thin-lens camera model has a finite-sized
+      lens,
+      which creates a blurred effect. Only the objects that are lying on the plane that's
+      <code style="font-family: monospace; background: #f0f0f0; padding: 2px 4px; border-radius: 3px;">
+              focal distance</code> away from the camera are in focus and those away from the plane appear out of
+      focus due to the depth-of-field effects!
+    </p>
+    <p>
+    <table style="margin: 0 auto; width: auto; text-align: center">
+      <caption>
+        All pictures have a lens radius of 0.23.
+      </caption>
+      <tr>
+        <td style="text-align: center">
+          <img src="images/focaldepth4_0.png" width="400px" />
+          <figcaption>
+            Focal depth of 4.0.
+          </figcaption>
+        </td>
+        <td style="text-align: center">
+          <img src="images/focaldepth4_5.png" width="400px" />
+          <figcaption>
+            Focal depth of 4.5.
+          </figcaption>
+        </td>
+      </tr>
+      <tr>
+        <td style="text-align: center">
+          <img src="images/focaldepth5_0.png" width="400px" />
+          <figcaption>
+            Focal depth of 5.0.
+          </figcaption>
+        </td>
+        <td style="text-align: center">
+          <img src="images/focaldepth5_5.png" width="400px" />
+          <figcaption>
+            Focal depth of 5.5.
+          </figcaption>
+        </td>
+      </tr>
+    </table>
+    </p>
+    <p>As focal distance increases, the focus plane shifts from the edges of the box closest to the camera all the way
+      to the wall of the box furthest away from the camera. In the middle, the half of the dragon closest to and
+      furthest
+      from the camera shift into focus.</p>
+    <br />
+    <p>
+    <div style="display: flex; flex-direction: column; align-items: center">
+      <table style="margin: 0 auto; width: auto; text-align: center">
         <caption>
-          All pictures have 64 samples per pixel, 4 samples per light
+          All pictures have a focal depth of 4.5.
         </caption>
         <tr>
-          <td>
-            <img src="images/ray0.png" alt="Image 1" />
-            <figcaption>Max ray depth of 0.</figcaption>
-          </td>
-          <td>
-            <img src="images/ray1.png" alt="Image 2" />
-            <figcaption>Max ray depth of 1.</figcaption>
-          </td>
-        </tr>
-      </table>
-      <p>
-        Beginning with <code>max_ray_depth = 0</code>, only the light source is
-        visible since all surfaces need at least one bounce.
-      </p>
-      <p>
-        With <code>max_ray_depth = 1</code>, the balls are dark. This is the
-        effect of direct lighting. The spheres do reflect and refract the light
-        source however.
-      </p>
-      <table>
-        <tr>
-          <td>
-            <img src="images/ray2.png" alt="Image 3" />
-            <figcaption>Max ray depth of 2.</figcaption>
-          </td>
-          <td>
-            <img src="images/ray3.png" alt="Image 4" />
-            <figcaption>Max ray depth of 3.</figcaption>
-          </td>
-        </tr>
-      </table>
-      <p>
-        With <code>max_ray_depth = 2</code>, the ball on the left, the ball with
-        a mirror surface, is apparent. The ball on the right, the glass surface
-        one, is still mainly dark. This is due to the fact that for a mirror,
-        two bounces are used, one for the light to hit the ball and another to
-        hit the box.
-      </p>
-      <p>
-        With <code>max_ray_depth = 3</code>, the glass ball starts to show its
-        properties. This is due to the fact that rays can now travel into the
-        sphere, exit it, and hit the box. This is the effect of the refraction
-        code I implemented. I also noticed how the glass ball has an extremely
-        bright shadow. I noticed that the ball in the mirror reflection is
-        black, since mirror-like reflection requires an extra bounce.
-      </p>
-      <table>
-        <tr>
-          <td>
-            <img src="images/ray4.png" alt="Image 3" />
-            <figcaption>Max ray depth of 4.</figcaption>
-          </td>
-        </tr>
-      </table>
-      <p>
-        With <code>max_ray_depth = 4</code>, the reflection of the glass
-        surfaced ball is now in the mirror ball.
-      </p>
-      <table>
-        <tr>
-          <td>
-            <img src="images/ray5.png" alt="Image 4" />
-            <figcaption>Max ray depth of 5.</figcaption>
-          </td>
-          <td>
-            <img src="images/ray100.png" alt="Image 3" />
-            <figcaption>Max ray depth of 100.</figcaption>
-          </td>
-        </tr>
-      </table>
-      <p>
-        With <code>max_ray_depth = 5</code> and
-        <code>max_ray_depth = 100</code>, the two balls have started to
-        converge. There is not too much noticeable difference, just perhaps that
-        the glass ball is a little bit brighter.
-      </p>
-      <br />
-      <br />
-
-      <h3 align="middle">Part 2. Microfacet Material</h3>
-      <p>
-        <b> </b>
-      </p>
-      <table>
-        <caption>
-          All pictures have 128 samples per pixel, 1 sample per light, and 5
-          bounces
-        </caption>
-        <tr>
-          <td>
-            <img src="images/alpha005.png" alt="Image 1" />
-            <figcaption>Alpha of 0.005.</figcaption>
-          </td>
-          <td>
-            <img src="images/alpha05.png" alt="Image 2" />
-            <figcaption>Alpha of 0.05.</figcaption>
-          </td>
-        </tr>
-        <tr>
-          <td>
-            <img src="images/alpha25.png" alt="Image 1" />
-            <figcaption>Alpha of 0.25.</figcaption>
-          </td>
-          <td>
-            <img src="images/alpha5.png" alt="Image 2" />
-            <figcaption>Alpha of 0.5.</figcaption>
-          </td>
-        </tr>
-      </table>
-      <p>
-        Alpha is the roughness parameter that controls how "bumpy" the
-        microscopic surface is, and that affects how light is reflected. An
-        &alpha; that is smaller appers more glossy and an &alpha; that is larger
-        leads to less reflective and more matte. Lower &alpha; results in
-        microfacets that are aligned with the surface normal. This leads to a
-        strong reflection. As seen in the &alpha; = 0.005 rendered image, the
-        dragon is more reflective than the other &alpha; values. At larger
-        &alpha;, the angles of the microfacets are less aligned with the surface
-        normal, and this leads to incoming rays to have a higher variance of
-        outgoing angles. Thus, the surface looks more diffused and less glossy.
-        As seen in the &alpha; = 0.5 dragon, which is quite matte and not
-        reflective.
-      </p>
-      <br />
-      <p>
-        <b> </b>
-      </p>
-      <table>
-        <tr>
-          <td>
-            <img src="images/hemisphere.png" alt="Image 3" />
+          <td style="text-align: center">
+            <img src="images/aperture0_0.png" width="400px" />
             <figcaption>
-              Bunny rendered with cosine hemisphere sampling.
+              Lens radius = 0.00.
             </figcaption>
           </td>
-          <td>
-            <img src="images/importance.png" alt="Image 4" />
-            <figcaption>Bunny rendered with importance sampling.</figcaption>
+          <td style="text-align: center">
+            <img src="images/aperture0_23.png" width="400px" />
+            <figcaption>
+              Lens radius = 0.23.
+            </figcaption>
           </td>
         </tr>
-      </table>
-      <p>
-        Cosine hemisphere sampling gives a noiser rendered image of the surface
-        of the material. This is due to the fact that it samples uniformly,
-        which may be in directions that do not form the correct mirrored angle.
-        Importance sampling leads to a less noisy image of the surface of the
-        material, with less dark spots, because it importance sampling biases
-        samples towards ones with half vectors that align close with the surface
-        normal.
-      </p>
-      <br />
-      <p>
-        <b>
-          <td>
-            <img src="images/indium.png" alt="Image 1" />
-            <figcaption>Bunny rendered with Indium as its material!</figcaption>
-          </td>
-        </b>
-      </p>
-      <p>
-        I used &eta; values of 0.33228, 1.0162, 1.2474, with corresponding k
-        values of 3.1646, 2.5785, 2.4603 to get the material Indium.
-      </p>
-      <br />
-
-      <h3 align="middle">Part 3. Environment Light</h3>
-
-      <table>
         <tr>
-          <td>
-            <img src="images/the_sky_is_on_fire_4k.jpg" alt="Image 1" width="800px"/>
-            <figcaption>This was the .exr file I chose converted to .jpg. Unfortunately, its brilliance was 
-              sort of lost when only rendering such a small portion of it. I am wondering about why my 
-              rendered background is more muted and brighter than what appears here.
+          <td style="text-align: center">
+            <img src="images/aperture0_40.png" width="400px" />
+            <figcaption>
+              Lens radius = 0.40.
+            </figcaption>
+          </td>
+          <td style="text-align: center">
+            <img src="images/aperture0_60.png" width="400px" />
+            <figcaption>
+              Lens radius = 0.60.
             </figcaption>
           </td>
         </tr>
       </table>
-
-      <p>
-      </p>
-      <p>Environment lighting uses an environment map to simulate light arriving from all directions, like 
-        it is from a source that is infinitely far away. The light rays are essentially parallel, which is a 
-        good approximation for natural light from the sky, since the sun is a light source that is 
-        far away! By sampling this environment map, I am able to capture overall lighting, reflections, and 
-        shadows in a scene, to create more realistic renderings!
-      </p>
-      <br />
-      <p>
-        <table>
-          <tr>
-            <td>
-              <img src="images/probability_debug.png" alt="Image 1" width="800px"/>
-              <figcaption>Probability debug image generated!</figcaption>
-            </td>
-          </tr>
-        </table>
-      </p>
-      <p>Because I was not able to access the original .exr file, it was harder to verify if 
-        my probability calculations were correct. At first I was worried, because this image generated 
-      was a lot smoother than the example image. But, after playing around with several of the files, I saw 
-    that some of the other ones generated probability images that were more "jagged", which reassured me. </p>
-      <br />
-      <p>
-          <table
-            style="margin: 0 auto; width: auto; text-align: center"
-          >
-            <tr>
-              <td style="text-align: center">
-                <img src="images/uniform_sampling_flipped.png" width="400px" />
-                <figcaption>
-                  Uniform sampling, 4 samples per pixel, 64 samples per light.
-                </figcaption>
-              </td>
-              <td style="text-align: center">
-                <img src="images/importance_sampling.png" width="400px" />
-                <figcaption>
-                  Importance sampling, 4 samples per pixel, 64 samples per light.
-                </figcaption>
-              </td>
-            </tr>
-          </table>
-      </p>
-      <p>The noise level of the picture rendered with importance sampling is lower than the picture 
-        that used uniform sampling. This is especially present in the pedestal that the bunny is perched on. 
-      </p>
-      <br />
-      <p>
-          <table
-            style="margin: 0 auto; width: auto; text-align: center"
-          >
-            <tr>
-              <td style="text-align: center">
-                <img src="images/uniform_cu.png" width="400px" />
-                <figcaption>
-                  Uniform sampling, 4 samples per pixel, 64 samples per light.
-                </figcaption>
-              </td>
-              <td style="text-align: center">
-                <img src="images/importance_cu.png" width="400px" />
-                <figcaption>
-                  Importance sampling, 4 samples per pixel, 64 samples per light.
-                </figcaption>
-              </td>
-            </tr>
-          </table>
-      </p>
-      <p>Again, the image rendered with importance sampling appears noticeably smoother. 
-        There are fewer speckles, indicating reduced noise. 
-        This can be seen in the pedestal, especially at the rounded corners,
-        as well as on the edges of the bunny.
-      </p>
-      <br />
-
-      <h3 align="middle">Part 4. Depth of Field</h3>
-      <p>
-            A pinhole camera has an infinitely small aperture, which means each light ray passes through a single point. This results
-             in a rendered scene where all parts are in focus. On the other hand, a thin-lens camera model has a finite-sized lens, 
-             which creates a blurred effect. Only the objects that are lying on the plane that's 
-             <code style="font-family: monospace; background: #f0f0f0; padding: 2px 4px; border-radius: 3px;">
-              focal distance</code> away from the camera are in focus and those away from the plane appear out of 
-              focus due to the depth-of-field effects!
-      </p>
-      <p>
-          <table
-            style="margin: 0 auto; width: auto; text-align: center"
-          >
-          <caption>
-            All pictures have a lens radius of 0.23.
-          </caption>
-            <tr>
-              <td style="text-align: center">
-                <img src="images/focaldepth4_0.png" width="400px" />
-                <figcaption>
-                  Focal depth of 4.0.
-                </figcaption>
-              </td>
-              <td style="text-align: center">
-                <img src="images/focaldepth4_5.png" width="400px" />
-                <figcaption>
-                  Focal depth of 4.5.
-                </figcaption>
-              </td>
-            </tr>
-            <tr>
-              <td style="text-align: center">
-                <img src="images/focaldepth5_0.png" width="400px" />
-                <figcaption>
-                  Focal depth of 5.0.
-                </figcaption>
-              </td>
-              <td style="text-align: center">
-                <img src="images/focaldepth5_5.png" width="400px" />
-                <figcaption>
-                  Focal depth of 5.5.
-                </figcaption>
-              </td>
-            </tr>
-          </table>
-      </p>
-      <p>As focal distance increases, the focus plane shifts from the edges of the box closest to the camera all the way 
-        to the wall of the box furthest away from the camera. In the middle, the half of the dragon closest to and furthest 
-        from the camera shift into focus.</p>
-      <br />
-      <p>
-        <div style="display: flex; flex-direction: column; align-items: center">
-          <table
-            style="margin: 0 auto; width: auto; text-align: center"
-          >
-          <caption>
-            All pictures have a focal depth of 4.5.
-          </caption>
-            <tr>
-              <td style="text-align: center">
-                <img src="images/aperture0_0.png" width="400px" />
-                <figcaption>
-                  Lens radius = 0.00.
-                </figcaption>
-              </td>
-              <td style="text-align: center">
-                <img src="images/aperture0_23.png" width="400px" />
-                <figcaption>
-                  Lens radius = 0.23.
-                </figcaption>
-              </td>
-            </tr>
-            <tr>
-              <td style="text-align: center">
-                <img src="images/aperture0_40.png" width="400px" />
-                <figcaption>
-                  Lens radius = 0.40.
-                </figcaption>
-              </td>
-              <td style="text-align: center">
-                <img src="images/aperture0_60.png" width="400px" />
-                <figcaption>
-                  Lens radius = 0.60.
-                </figcaption>
-              </td>
-            </tr>
-          </table>
-        </div>
-      </p>
-      <p>
-        When aperture is 0, the entire scene is focus, since this is the same as a pinhole camera. As aperture increases,
-        rays originating from a point on the scene enter the camera from a broader range of positions on the lens. For 
-        objects not the focus distance, the rays converge at different points, which leads to more blur. The picture with 
-        the highest aperture has the most blur, which makes sense.
-      </p>
-      <br />
     </div>
-  </body>
+    </p>
+    <p>
+      When aperture is 0, the entire scene is focus, since this is the same as a pinhole camera. As aperture increases,
+      rays originating from a point on the scene enter the camera from a broader range of positions on the lens. For
+      objects not the focus distance, the rays converge at different points, which leads to more blur. The picture with
+      the highest aperture has the most blur, which makes sense.
+    </p>
+    <br />
+  </div>
+</body>
+
 </html>
